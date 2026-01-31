@@ -1,0 +1,31 @@
+# XAMPP / Apache
+xampp/
+apache/
+mysql/
+tmp/
+
+# Logs
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# VS Code
+.vscode/
+
+# Node (if ever used)
+node_modules/
+
+# Env / secrets
+.env
+
+# Backup files
+*.bak
+*.old
+
+# Vendor (if not using composer)
+vendor/
+
+# Local config copies
+config.local.php
