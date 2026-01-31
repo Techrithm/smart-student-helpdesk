@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Complaint Details - Smart Helpdesk</title>
+    <link rel="stylesheet" href="../../assets/css/style.css">
+    <style>
+        .message-box {
+            padding: 15px;
+            background: whitesmoke;
+            border-radius: 5px;
+            margin-bottom: 10px;
+        }
+
+        .message-box.staff {
+            background: #e9ecef;
+            border-left: 4px solid var(--primary-color);
+        }
+
+        .message-box.student {
+            background: #f8f9fa;
+            border-left: 4px solid var(--secondary-color);
+        }
+
+        .meta {
+            font-size: 0.85rem;
+            color: #666;
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <div class="container nav">
+            <a href="dashboard.html" class="logo">SmartHelpdesk <span
+                    style="font-size: 0.8rem; color: #666;">(Student)</span></a>
+            <div>
+                <a href="dashboard.html" class="btn btn-secondary">Dashboard</a>
+                <a href="my_complaints.html" class="btn btn-secondary">My Tickets</a>
+                <a href="../../backend/auth/logout.php" class="btn btn-danger">Logout</a>
+            </div>
+        </div>
+    </header>
+
+    <div class="container" style="max-width: 800px;">
+        <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2 style="margin: 0;">Complaint #<span id="complaintId"></span></h2>
+                <span id="statusBadge"
+                    style="padding: 5px 15px; border-radius: 20px; color: white; font-weight: bold;">Loading...</span>
+            </div>
+
+            <h3 id="subject" style="margin-top: 0;">Loading...</h3>
+            <p class="meta">Department: <span id="department"></span> | Date: <span id="date"></span></p>
+
+            <div
+                style="background: #fff; padding: 20px; border: 1px solid #eee; border-radius: 5px; margin-bottom: 30px;">
+                <strong>Description:</strong>
+                <p id="description" style="white-space: pre-wrap; margin-top: 5px;"></p>
+            </div>
+
+            <h3>Discussion</h3>
+            <div id="repliesContainer">
+                <!-- Replies here -->
+            </div>
+
+            <hr>
+            <h4>Add Reply</h4>
+            <form id="replyForm">
+                <div class="form-group">
+                    <textarea id="replyMessage" class="form-control" rows="3" required
+                        placeholder="Type your reply here..."></textarea>
+                </div>
+                <button type="submit" class="btn">Post Reply</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const id = urlParams.get('id');
+
+        if (!id) {
+            alert('No ID provided');
+            window.location.href = 'my_complaints.html';
+        }
+
+        async function loadDetails() {
+            try {
+                const response = await fetch(`../../backend/complaints/api.php?action=details&id=${id}`);
+                const result = await response.json();
+
+                if (result.status === 'success') {
+                    const c = result.data.complaint;
+                    const replies = result.data.replies;
+
+                    document.getElementById('complaintId').innerText = c.id;
+                    document.getElementById('subject').innerText = c.subject;
+                    document.getElementById('department').innerText = c.department_name;
+                    document.getElementById('date').innerText = new Date(c.created_at).toLocaleString();
+                    document.getElementById('description').innerText = c.description;
+
+                    const badge = document.getElementById('statusBadge');
+                    badge.innerText = c.status.toUpperCase();
+                    badge.style.backgroundColor = getStatusColor(c.status);
+
+                    const container = document.getElementById('repliesContainer');
+                    container.innerHTML = '';
+
+                    replies.forEach(r => {
+                        const div = document.createElement('div');
+                        // Basic check: if user_role is staff/admin -> style different
+                        const isStaff = r.user_role === 'staff' || r.user_role === 'admin';
+                        div.className = `message-box ${isStaff ? 'staff' : 'student'}`;
+                        div.innerHTML = `
+                            <div class="meta">
+                                <strong>${r.user_name} (${r.user_role})</strong> 
+                                - ${new Date(r.created_at).toLocaleString()}
+                            </div>
+                            <div>${r.message}</div>
+                        `;
+                        container.appendChild(div);
+                    });
+
+                    if (replies.length === 0) {
+                        container.innerHTML = '<p style="color: #777; font-style: italic;">No replies yet.</p>';
+                    }
+
+                } else {
+                    alert(result.message);
+                    if (result.message === 'Unauthorized') window.location.href = 'login.html';
+                }
+            } catch (e) { console.error(e); }
+        }
+
+        document.getElementById('replyForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const message = document.getElementById('replyMessage').value;
+
+            try {
+                const response = await fetch('../../backend/complaints/api.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'reply', complaint_id: id, message })
+                });
+                const result = await response.json();
+                if (result.status === 'success') {
+                    document.getElementById('replyMessage').value = '';
+                    loadDetails(); // Reload replies
+                } else {
+                    alert(result.message);
+                }
+            } catch (e) { console.error(e); }
+        });
+
+        function getStatusColor(status) {
+            if (status === 'pending') return '#dc3545';
+            if (status === 'in_progress') return '#ffc107';
+            if (status === 'resolved') return '#198754';
+            return '#6c757d';
+        }
+
+        loadDetails();
+    </script>
+</body>
+
+</html>

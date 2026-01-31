@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Process Ticket - Smart Helpdesk</title>
+    <link rel="stylesheet" href="../../assets/css/style.css">
+    <style>
+        .message-box {
+            padding: 15px;
+            background: whitesmoke;
+            border-radius: 5px;
+            margin-bottom: 10px;
+        }
+
+        .message-box.staff {
+            background: #e9ecef;
+            border-left: 4px solid var(--primary-color);
+        }
+
+        .message-box.student {
+            background: #f8f9fa;
+            border-left: 4px solid var(--secondary-color);
+        }
+
+        .meta {
+            font-size: 0.85rem;
+            color: #666;
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <div class="container nav">
+            <a href="dashboard.html" class="logo">SmartHelpdesk <span
+                    style="font-size: 0.8rem; color: #666;">(Staff)</span></a>
+            <div>
+                <a href="dashboard.html" class="btn btn-secondary">Dashboard</a>
+                <a href="complaints_list.html" class="btn">View Tickets</a>
+                <a href="../../backend/auth/logout.php" class="btn btn-danger">Logout</a>
+            </div>
+        </div>
+    </header>
+
+    <div class="container" style="max-width: 800px;">
+        <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2 style="margin: 0;">Ticket #<span id="complaintId"></span></h2>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <select id="statusSelect" class="form-control" style="width: auto; padding: 5px;">
+                        <option value="pending">Pending</option>
+                        <option value="in_progress">In Progress</option>
+                        <option value="resolved">Resolved</option>
+                    </select>
+                    <button onclick="updateStatus()" class="btn btn-success"
+                        style="padding: 6px 15px; font-size: 0.9rem;">Update</button>
+                </div>
+            </div>
+
+            <h3 id="subject" style="margin-top: 0;">Loading...</h3>
+            <p class="meta">Student: <span id="studentName"></span> | Dept: <span id="department"></span> | Date: <span
+                    id="date"></span></p>
+
+            <div
+                style="background: #fff; padding: 20px; border: 1px solid #eee; border-radius: 5px; margin-bottom: 30px;">
+                <strong>Description:</strong>
+                <p id="description" style="white-space: pre-wrap; margin-top: 5px;"></p>
+            </div>
+
+            <h3>Discussion</h3>
+            <div id="repliesContainer">
+                <!-- Replies here -->
+            </div>
+
+            <hr>
+            <h4>Add Reply</h4>
+            <form id="replyForm">
+                <div class="form-group">
+                    <textarea id="replyMessage" class="form-control" rows="3" required
+                        placeholder="Type your reply here..."></textarea>
+                </div>
+                <button type="submit" class="btn">Post Reply</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const id = urlParams.get('id');
+
+        if (!id) {
+            alert('No ID provided');
+            window.location.href = 'complaints_list.html';
+        }
+
+        async function loadDetails() {
+            try {
+                const response = await fetch(`../../backend/complaints/api.php?action=details&id=${id}`);
+                const result = await response.json();
+
+                if (result.status === 'success') {
+                    const c = result.data.complaint;
+                    const replies = result.data.replies;
+
+                    document.getElementById('complaintId').innerText = c.id;
+                    document.getElementById('subject').innerText = c.subject;
+                    document.getElementById('studentName').innerText = c.student_name;
+                    document.getElementById('department').innerText = c.department_name;
+                    document.getElementById('date').innerText = new Date(c.created_at).toLocaleString();
+                    document.getElementById('description').innerText = c.description;
+
+                    document.getElementById('statusSelect').value = c.status;
+
+                    const container = document.getElementById('repliesContainer');
+                    container.innerHTML = '';
+
+                    replies.forEach(r => {
+                        const div = document.createElement('div');
+                        const isStaff = r.user_role === 'staff' || r.user_role === 'admin';
+                        div.className = `message-box ${isStaff ? 'staff' : 'student'}`;
+                        div.innerHTML = `
+                            <div class="meta">
+                                <strong>${r.user_name} (${r.user_role})</strong> 
+                                - ${new Date(r.created_at).toLocaleString()}
+                            </div>
+                            <div>${r.message}</div>
+                        `;
+                        container.appendChild(div);
+                    });
+                    if (replies.length === 0) {
+                        container.innerHTML = '<p style="color: #777; font-style: italic;">No replies yet.</p>';
+                    }
+
+                } else {
+                    alert(result.message);
+                    if (result.message === 'Unauthorized') window.location.href = 'login.html';
+                }
+            } catch (e) { console.error(e); }
+        }
+
+        async function updateStatus() {
+            const status = document.getElementById('statusSelect').value;
+            try {
+                const response = await fetch('../../backend/complaints/api.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'update_status', complaint_id: id, status })
+                });
+                const result = await response.json();
+                if (result.status === 'success') {
+                    alert('Status Updated!');
+                } else {
+                    alert(result.message);
+                }
+            } catch (e) { console.error(e); }
+        }
+
+        document.getElementById('replyForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const message = document.getElementById('replyMessage').value;
+
+            try {
+                const response = await fetch('../../backend/complaints/api.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'reply', complaint_id: id, message })
+                });
+                const result = await response.json();
+                if (result.status === 'success') {
+                    document.getElementById('replyMessage').value = '';
+                    loadDetails(); // Reload replies
+                } else {
+                    alert(result.message);
+                }
+            } catch (e) { console.error(e); }
+        });
+
+        loadDetails();
+    </script>
+</body>
+
+</html>

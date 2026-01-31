@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Dashboard - Smart Helpdesk</title>
+    <link rel="stylesheet" href="../../assets/css/style.css">
+</head>
+
+<body>
+
+    <header>
+        <div class="container nav">
+            <a href="dashboard.html" class="logo">SmartHelpdesk <span
+                    style="font-size: 0.8rem; color: #666;">(Student)</span></a>
+            <div>
+                <a href="dashboard.html" class="btn btn-secondary">Dashboard</a>
+                <a href="raise_complaint.html" class="btn">Raise new Ticket</a>
+                <a href="my_complaints.html" class="btn btn-secondary">My Tickets</a>
+                <a href="../../backend/auth/logout.php" class="btn btn-danger">Logout</a>
+            </div>
+        </div>
+    </header>
+
+    <div class="container">
+        <h1>Welcome, <span id="userName">Student</span></h1>
+
+        <div class="role-select"> <!-- Reusing grid layout -->
+            <div class="role-card">
+                <h3 id="totalComplaints">0</h3>
+                <p>Total Complaints</p>
+                <a href="my_complaints.html" class="btn">View All</a>
+            </div>
+            <div class="role-card">
+                <h3 id="pendingComplaints">0</h3>
+                <p>Pending</p>
+            </div>
+            <div class="role-card">
+                <h3 id="resolvedComplaints">0</h3>
+                <p>Resolved</p>
+            </div>
+        </div>
+
+        <h2 style="margin-top: 40px;">Recent Activity</h2>
+        <div id="loading" style="text-align: center;">Loading...</div>
+        <table style="width: 100%; border-collapse: collapse; display: none;" id="complaintTable">
+            <thead>
+                <tr style="background: #f1f1f1; text-align: left;">
+                    <th style="padding: 10px;">ID</th>
+                    <th style="padding: 10px;">Subject</th>
+                    <th style="padding: 10px;">Department</th>
+                    <th style="padding: 10px;">Status</th>
+                    <th style="padding: 10px;">Date</th>
+                    <th style="padding: 10px;">Action</th>
+                </tr>
+            </thead>
+            <tbody id="tableBody">
+                <!-- Rows here -->
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        async function loadDashboard() {
+            try {
+                // Determine user name from session is tricky via plain HTML unless we fetch "me" info.
+                // Or we store in localStorage during Login?
+                // Let's fetch complaints which checks session. If 401, redirect.
+                // I'll call complaints list to get stats.
+
+                const response = await fetch('../../backend/complaints/api.php?action=list');
+                const result = await response.json();
+
+                if (result.status === 'error' && result.message === 'Unauthorized') {
+                    window.location.href = 'login.html';
+                    return;
+                }
+
+                if (result.status === 'success') {
+                    const complaints = result.data;
+                    document.getElementById('totalComplaints').innerText = complaints.length;
+                    document.getElementById('pendingComplaints').innerText = complaints.filter(c => c.status === 'pending').length;
+                    document.getElementById('resolvedComplaints').innerText = complaints.filter(c => c.status === 'resolved').length;
+
+                    document.getElementById('loading').style.display = 'none';
+                    const table = document.getElementById('complaintTable');
+                    const tbody = document.getElementById('tableBody');
+
+                    if (complaints.length > 0) {
+                        table.style.display = 'table';
+                        // Show top 5
+                        complaints.slice(0, 5).forEach(c => {
+                            const tr = document.createElement('tr');
+                            tr.style.borderBottom = '1px solid #ddd';
+                            tr.innerHTML = `
+                                <td style="padding: 10px;">#${c.id}</td>
+                                <td style="padding: 10px;">${c.subject}</td>
+                                <td style="padding: 10px;">${c.department_name}</td>
+                                <td style="padding: 10px;"><span style="padding: 5px 10px; border-radius: 4px; background: ${getStatusColor(c.status)}; color: white;">${c.status}</span></td>
+                                <td style="padding: 10px;">${new Date(c.created_at).toLocaleDateString()}</td>
+                                <td style="padding: 10px;"><a href="complaint_details.html?id=${c.id}" style="color: var(--primary-color);">View</a></td>
+                            `;
+                            tbody.appendChild(tr);
+                        });
+                    } else {
+                        document.getElementById('loading').innerText = "No complaints found. Raise one!";
+                        document.getElementById('loading').style.display = 'block';
+                    }
+                }
+
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        function getStatusColor(status) {
+            if (status === 'pending') return '#dc3545'; // red
+            if (status === 'in_progress') return '#ffc107'; // yellow
+            if (status === 'resolved') return '#198754'; // green
+            return '#6c757d';
+        }
+
+        loadDashboard();
+    </script>
+</body>
+
+</html>

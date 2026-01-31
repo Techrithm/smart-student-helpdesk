@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Smart Helpdesk</title>
+    <link rel="stylesheet" href="../../assets/css/style.css">
+</head>
+
+<body>
+
+    <header>
+        <div class="container nav">
+            <a href="dashboard.html" class="logo">SmartHelpdesk <span
+                    style="font-size: 0.8rem; color: #666;">(Admin)</span></a>
+            <div>
+                <a href="dashboard.html" class="btn btn-secondary">Dashboard</a>
+                <a href="departments.html" class="btn btn-secondary">Departments</a>
+                <a href="users.html" class="btn btn-secondary">Users</a>
+                <a href="all_complaints.html" class="btn btn-secondary">Complaints</a>
+                <a href="../../backend/auth/logout.php" class="btn btn-danger">Logout</a>
+            </div>
+        </div>
+    </header>
+
+    <div class="container">
+        <h1>System Overview</h1>
+
+        <div class="role-select">
+            <div class="role-card">
+                <h3 id="totalComplaints">0</h3>
+                <p>Total Complaints</p>
+            </div>
+            <div class="role-card">
+                <h3 id="pendingComplaints">0</h3>
+                <p>Pending Tickets</p>
+            </div>
+            <div class="role-card">
+                <h3 id="resolvedComplaints">0</h3>
+                <p>Resolved</p>
+            </div>
+            <div class="role-card">
+                <h3 id="usersCount">0</h3>
+                <p>Total Users</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function loadStats() {
+            try {
+                const response = await fetch('../../backend/admin/api.php?action=dashboard_stats');
+                const result = await response.json();
+
+                if (result.status === 'error' && result.message === 'Unauthorized') {
+                    window.location.href = 'login.html';
+                    return;
+                }
+
+                if (result.status === 'success') {
+                    const stats = result.data;
+                    document.getElementById('totalComplaints').innerText = stats.total_complaints;
+                    document.getElementById('pendingComplaints').innerText = stats.pending;
+                    document.getElementById('resolvedComplaints').innerText = stats.resolved;
+                    document.getElementById('usersCount').innerText = stats.users;
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        }
+        loadStats();
+    </script>
+</body>
+
+</html>
