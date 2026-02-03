@@ -100,6 +100,14 @@ nav {
     margin-bottom: 30px;
 }
 
+.role-card .btn {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 220px;
+    margin:auto;
+}
+
 /* Buttons */
 .btn {
     display: inline-block;
@@ -114,6 +122,7 @@ nav {
     font-weight: 600;
     transition: all 0.3s ease;
     text-align: center;
+    box-sizing: border-box;
 }
 
 .btn:hover {

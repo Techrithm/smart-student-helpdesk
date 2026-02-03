@@ -2,6 +2,6 @@
 // backend/auth/logout.php
 session_start();
 session_destroy();
-header('Location: ../../index.html');
+header('Location: ../../frontend/index.html');
 exit;
 ?>
