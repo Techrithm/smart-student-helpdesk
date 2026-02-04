@@ -1,6 +1,6 @@
 <?php
 // backend/auth/logout.php
-session_start();
+require_once '../config/session.php';
 session_destroy();
 header('Location: ../../frontend/index.html');
 exit;

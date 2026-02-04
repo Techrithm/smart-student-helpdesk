@@ -1,6 +1,6 @@
 <?php
 // backend/admin/api.php
-session_start();
+require_once '../config/session.php';
 require_once '../config/db.php';
 
 header('Content-Type: application/json');

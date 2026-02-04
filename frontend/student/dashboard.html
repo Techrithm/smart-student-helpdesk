@@ -50,6 +50,7 @@
                     <th style="padding: 10px;">ID</th>
                     <th style="padding: 10px;">Subject</th>
                     <th style="padding: 10px;">Department</th>
+                    <th style="padding: 10px;">Priority</th>
                     <th style="padding: 10px;">Status</th>
                     <th style="padding: 10px;">Date</th>
                     <th style="padding: 10px;">Action</th>
@@ -66,8 +67,16 @@
             try {
                 // Determine user name from session is tricky via plain HTML unless we fetch "me" info.
                 // Or we store in localStorage during Login?
-                // Let's fetch complaints which checks session. If 401, redirect.
-                // I'll call complaints list to get stats.
+                // Fetch user info
+                const sessionResponse = await fetch('../../backend/auth/check_session.php');
+                const sessionResult = await sessionResponse.json();
+
+                if (sessionResult.logged_in) {
+                    document.getElementById('userName').innerText = sessionResult.user.name;
+                } else {
+                    window.location.href = 'login.html';
+                    return;
+                }
 
                 const response = await fetch('../../backend/complaints/api.php?action=list');
                 const result = await response.json();
@@ -97,6 +106,7 @@
                                 <td style="padding: 10px;">#${c.id}</td>
                                 <td style="padding: 10px;">${c.subject}</td>
                                 <td style="padding: 10px;">${c.department_name}</td>
+                                <td style="padding: 10px;"><span style="padding: 5px 10px; border-radius: 4px; background: ${getPriorityColor(c.priority)}; color: white;">${(c.priority || 'medium').toLowerCase()}</span></td>
                                 <td style="padding: 10px;"><span style="padding: 5px 10px; border-radius: 4px; background: ${getStatusColor(c.status)}; color: white;">${c.status}</span></td>
                                 <td style="padding: 10px;">${new Date(c.created_at).toLocaleDateString()}</td>
                                 <td style="padding: 10px;"><a href="complaint_details.html?id=${c.id}" style="color: var(--primary-color);">View</a></td>
@@ -115,9 +125,16 @@
         }
 
         function getStatusColor(status) {
-            if (status === 'pending') return '#dc3545'; // red
+            if (status === 'pending') return '#8B0000'; // dark red
             if (status === 'in_progress') return '#ffc107'; // yellow
-            if (status === 'resolved') return '#198754'; // green
+            if (status === 'resolved') return '#006400'; // dark green
+            return '#6c757d';
+        }
+
+        function getPriorityColor(priority) {
+            if (priority === 'high') return '#FF0000';    // brightest red
+            if (priority === 'medium') return '#fd7e14';  // orange
+            if (priority === 'low') return '#4CBB17';     // kelly green
             return '#6c757d';
         }
 

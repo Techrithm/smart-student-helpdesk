@@ -21,6 +21,7 @@ CREATE TABLE IF NOT EXISTS complaints (
     department_id INT NOT NULL,
     subject VARCHAR(255) NOT NULL,
     description TEXT NOT NULL,
+    priority ENUM('low', 'medium', 'high') DEFAULT 'medium',
     status ENUM('pending', 'in_progress', 'resolved') DEFAULT 'pending',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,

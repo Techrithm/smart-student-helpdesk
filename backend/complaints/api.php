@@ -1,9 +1,65 @@
 <?php
 // backend/complaints/api.php
-session_start();
+require_once '../config/session.php';
 require_once '../config/db.php';
 
 header('Content-Type: application/json');
+
+// Function to auto-detect priority based on keywords
+function detectPriority($subject, $description) {
+    $text = strtolower($subject . ' ' . $description);
+    
+    // HIGH PRIORITY keywords - Urgent/Safety/Critical issues
+    $highKeywords = [
+        'water', 'leak', 'leakage', 'flood', 'flooding',
+        'fire', 'smoke', 'emergency', 'urgent', 'critical',
+        'electricity', 'power', 'outage', 'blackout',
+        'security', 'theft', 'stolen', 'break-in', 'unsafe',
+        'accident', 'injury', 'medical', 'health', 'hazard',
+        'broken', 'damage', 'dangerous', 'immediate',
+        'hostel', 'dormitory', 'residence'
+    ];
+    
+    // MEDIUM PRIORITY keywords - Important but not urgent
+    $mediumKeywords = [
+        'fees', 'fee', 'payment', 'deducted', 'refund', 'account', 'accounts',
+        'admission', 'certificate', 'document', 'exam', 'result', 'marks',
+        'attendance', 'transport', 'bus', 'canteen', 'food'
+    ];
+    
+    // LOW PRIORITY keywords - Minor/Non-urgent issues
+    $lowKeywords = [
+        'library', 'book', 'books', 'magazine', 'journal',
+        'notes', 'syllabus', 'timetable', 'schedule',
+        'suggestion', 'feedback', 'improvement', 'request',
+        'question', 'inquiry', 'information', 'clarification',
+        'outdated', 'old', 'condition'
+    ];
+    
+    // Check for HIGH priority keywords first
+    foreach ($highKeywords as $keyword) {
+        if (strpos($text, $keyword) !== false) {
+            return 'high';
+        }
+    }
+    
+    // Check for MEDIUM priority keywords
+    foreach ($mediumKeywords as $keyword) {
+        if (strpos($text, $keyword) !== false) {
+            return 'medium';
+        }
+    }
+    
+    // Check for LOW priority keywords
+    foreach ($lowKeywords as $keyword) {
+        if (strpos($text, $keyword) !== false) {
+            return 'low';
+        }
+    }
+    
+    // Default to MEDIUM if no keywords match
+    return 'medium';
+}
 
 // Check Auth
 if (!isset($_SESSION['user_id'])) {
@@ -32,25 +88,12 @@ if ($method === 'GET') {
             ");
             $stmt->execute([$user_id]);
         } elseif ($role === 'staff') {
-             // Staff sees complaints for their department? 
-             // Logic: We didn't assign staff to dept in DB explicitly in 'users', but typically staff belongs to one.
-             // For simplicity, let's assume Staff sees ALL for now, or we need a way to link staff to dept.
-             // Request said: "Staff: View department complaints".
-             // We need to know which dept the staff belongs to.
-             // Check Schema: Users table has no department_id.
-             // FIX: We need to assign IT Staff to IT Dept.
-             // For this "Beginner/Simple" project, I'll filter by the department name if it matches user name? No.
-             // I'll add a 'department_id' to users table? Or just show ALL for now?
-             // Prompt says: "Complaints are assigned to departments".
-             // Let's assume Staff can view ALL for this MVP or I'll add a quick fix: 
-             // Staff user is "IT Staff". I'll regex?
-             // Better: I'll fetch ALL for staff for now to ensure it works, filtering is enhancement.
              $stmt = $conn->query("
                 SELECT c.*, d.name as department_name, u.name as student_name 
                 FROM complaints c 
                 JOIN departments d ON c.department_id = d.id
                 JOIN users u ON c.user_id = u.id
-                ORDER BY c.created_at DESC
+                ORDER BY FIELD(c.priority, 'high', 'medium', 'low'), c.created_at DESC
              ");
         } else {
             // Admin sees all
@@ -59,7 +102,7 @@ if ($method === 'GET') {
                 FROM complaints c 
                 JOIN departments d ON c.department_id = d.id
                 JOIN users u ON c.user_id = u.id
-                ORDER BY c.created_at DESC
+                ORDER BY FIELD(c.priority, 'high', 'medium', 'low'), c.created_at DESC
              ");
         }
         
@@ -122,15 +165,26 @@ if ($method === 'POST') {
         $dept_id = $data['department_id'];
         $subject = $data['subject'];
         $desc = $data['description'];
+        $priority = $data['priority'] ?? null;
+        
+        // Auto-detect priority based on keywords if not explicitly set or if set to 'auto'
+        if (empty($priority) || $priority === 'auto') {
+            $priority = detectPriority($subject, $desc);
+        }
+        
+        // Validate priority
+        if (!in_array($priority, ['low', 'medium', 'high'])) {
+            $priority = 'medium';
+        }
         
         if (empty($dept_id) || empty($subject) || empty($desc)) {
             echo json_encode(['status' => 'error', 'message' => 'Fields required']);
             exit;
         }
         
-        $stmt = $conn->prepare("INSERT INTO complaints (user_id, department_id, subject, description) VALUES (?, ?, ?, ?)");
-        if ($stmt->execute([$user_id, $dept_id, $subject, $desc])) {
-            echo json_encode(['status' => 'success', 'message' => 'Complaint Raised']);
+        $stmt = $conn->prepare("INSERT INTO complaints (user_id, department_id, subject, description, priority) VALUES (?, ?, ?, ?, ?)");
+        if ($stmt->execute([$user_id, $dept_id, $subject, $desc, $priority])) {
+            echo json_encode(['status' => 'success', 'message' => 'Complaint Raised', 'priority' => $priority]);
         } else {
              echo json_encode(['status' => 'error', 'message' => 'Failed to raise complaint']);
         }

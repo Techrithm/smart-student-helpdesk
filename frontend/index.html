@@ -76,6 +76,53 @@
         </div>
     </div>
 
+    <script>
+        async function checkSession() {
+            try {
+                // Adjust path as index.html is in frontend/, check_session is in backend/auth/
+                // Relative path from frontend/index.html to backend/auth/check_session.php is ../backend/auth/check_session.php
+                const response = await fetch('../backend/auth/check_session.php');
+                const result = await response.json();
+
+                if (result.logged_in) {
+                    const userRole = result.user.role;
+                    let dashboardLink = '#';
+                    if (userRole === 'student') dashboardLink = 'student/dashboard.html';
+                    if (userRole === 'staff') dashboardLink = 'staff/dashboard.html';
+                    if (userRole === 'admin') dashboardLink = 'admin/dashboard.html';
+
+                    // Update UI for logged in user
+                    updateRoleCard('Student', userRole === 'student', dashboardLink);
+                    updateRoleCard('Staff', userRole === 'staff', dashboardLink);
+                    updateRoleCard('Admin', userRole === 'admin', dashboardLink);
+                }
+            } catch (error) {
+                console.error('Session check failed', error);
+            }
+        }
+
+        function updateRoleCard(roleName, isCurrentRole, dashboardLink) {
+            // Find the card
+            const cards = document.querySelectorAll('.role-card');
+            cards.forEach(card => {
+                const title = card.querySelector('h2').innerText;
+                if (title.includes(roleName)) {
+                    if (isCurrentRole) {
+                        const btn = card.querySelector('.btn');
+                        btn.textContent = 'Go to Dashboard';
+                        btn.href = dashboardLink;
+                        btn.classList.add('btn-success');
+
+                        // Hide register link if exists (Student card)
+                        const registerDiv = card.querySelector('div[style*="margin-top"]');
+                        if (registerDiv) registerDiv.style.display = 'none';
+                    }
+                }
+            });
+        }
+
+        checkSession();
+    </script>
 </body>
 
 </html>

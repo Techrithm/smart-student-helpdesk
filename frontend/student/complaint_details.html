@@ -50,8 +50,12 @@
         <div class="card">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                 <h2 style="margin: 0;">Complaint #<span id="complaintId"></span></h2>
-                <span id="statusBadge"
-                    style="padding: 5px 15px; border-radius: 20px; color: white; font-weight: bold;">Loading...</span>
+                <div>
+                    <span id="priorityBadge"
+                        style="padding: 5px 15px; border-radius: 20px; color: white; font-weight: bold; margin-right: 10px;">Loading...</span>
+                    <span id="statusBadge"
+                        style="padding: 5px 15px; border-radius: 20px; color: white; font-weight: bold;">Loading...</span>
+                </div>
             </div>
 
             <h3 id="subject" style="margin-top: 0;">Loading...</h3>
@@ -108,6 +112,10 @@
                     badge.innerText = c.status.toUpperCase();
                     badge.style.backgroundColor = getStatusColor(c.status);
 
+                    const priorityBadge = document.getElementById('priorityBadge');
+                    priorityBadge.innerText = (c.priority || 'medium').toLowerCase();
+                    priorityBadge.style.backgroundColor = getPriorityColor(c.priority);
+
                     const container = document.getElementById('repliesContainer');
                     container.innerHTML = '';
 
@@ -158,9 +166,16 @@
         });
 
         function getStatusColor(status) {
-            if (status === 'pending') return '#dc3545';
+            if (status === 'pending') return '#8B0000'; // dark red
             if (status === 'in_progress') return '#ffc107';
-            if (status === 'resolved') return '#198754';
+            if (status === 'resolved') return '#006400'; // dark green
+            return '#6c757d';
+        }
+
+        function getPriorityColor(priority) {
+            if (priority === 'high') return '#FF0000';    // brightest red
+            if (priority === 'medium') return '#fd7e14';  // orange
+            if (priority === 'low') return '#4CBB17';     // kelly green
             return '#6c757d';
         }
 
