@@ -32,6 +32,7 @@
                     <th style="padding: 10px;">ID</th>
                     <th style="padding: 10px;">Subject</th>
                     <th style="padding: 10px;">Student</th>
+                    <th style="padding: 10px;">Priority</th>
                     <th style="padding: 10px;">Status</th>
                     <th style="padding: 10px;">Date</th>
                     <th style="padding: 10px;">Action</th>
@@ -64,6 +65,7 @@
                                 <td style="padding: 10px;">#${c.id}</td>
                                 <td style="padding: 10px;">${c.subject}</td>
                                 <td style="padding: 10px;">${c.student_name || 'N/A'}</td>
+                                <td style="padding: 10px;"><span style="padding: 5px 10px; border-radius: 4px; background: ${getPriorityColor(c.priority)}; color: white;">${(c.priority || 'medium').toLowerCase()}</span></td>
                                 <td style="padding: 10px;"><span style="padding: 5px 10px; border-radius: 4px; background: ${getStatusColor(c.status)}; color: white;">${c.status}</span></td>
                                 <td style="padding: 10px;">${new Date(c.created_at).toLocaleDateString()}</td>
                                 <td style="padding: 10px;"><a href="complaint_action.html?id=${c.id}" class="btn btn-secondary" style="padding: 5px 10px; font-size: 0.8rem;">View/Reply</a></td>
@@ -84,6 +86,13 @@
             if (status === 'pending') return '#8B0000'; // dark red
             if (status === 'in_progress') return '#ffc107';
             if (status === 'resolved') return '#006400'; // dark green
+            return '#6c757d';
+        }
+
+        function getPriorityColor(priority) {
+            if (priority === 'high') return '#FF0000';    // brightest red
+            if (priority === 'medium') return '#fd7e14';  // orange
+            if (priority === 'low') return '#4CBB17';     // kelly green
             return '#6c757d';
         }
 
