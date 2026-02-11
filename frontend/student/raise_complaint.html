@@ -45,17 +45,7 @@
                     <textarea id="description" class="form-control" rows="5" required
                         placeholder="Explain your issue in detail..."></textarea>
                 </div>
-                <div class="form-group">
-                    <label>Priority</label>
-                    <select id="priority" class="form-control" required>
-                        <option value="auto" selected>🤖 Auto-detect (Recommended)</option>
-                        <option value="low">Low - Minor issue, not urgent</option>
-                        <option value="medium">Medium - Needs attention soon</option>
-                        <option value="high">High - Urgent, needs immediate action</option>
-                    </select>
-                    <small style="color: #666;">Auto-detect assigns priority based on issue type (e.g., water issues =
-                        High)</small>
-                </div>
+
                 <button type="submit" class="btn" style="width: 100%;">Submit Complaint</button>
             </form>
         </div>
@@ -82,14 +72,13 @@
             const department_id = document.getElementById('department_id').value;
             const subject = document.getElementById('subject').value;
             const description = document.getElementById('description').value;
-            const priority = document.getElementById('priority').value;
             const alertBox = document.getElementById('alertBox');
 
             try {
                 const response = await fetch('../../backend/complaints/api.php', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ action: 'create', department_id, subject, description, priority })
+                    body: JSON.stringify({ action: 'create', department_id, subject, description })
                 });
 
                 const result = await response.json();
