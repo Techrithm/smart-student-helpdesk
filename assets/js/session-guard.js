@@ -60,35 +60,45 @@
 
     // Validate session on page load
     async function validateSession() {
+        console.log('[Session Guard] Starting validation...');
+        console.log('[Session Guard] Expected role:', expectedRole);
+
         try {
+            console.log('[Session Guard] Fetching check_session.php...');
             const response = await fetch('../../backend/auth/check_session.php', {
                 method: 'GET',
                 cache: 'no-cache',
                 credentials: 'same-origin'
             });
 
+            console.log('[Session Guard] Response status:', response.status);
+
             const result = await response.json();
+            console.log('[Session Guard] API result:', result);
 
             // If not logged in, redirect to appropriate login page
             if (!result.logged_in) {
+                console.warn('[Session Guard] Not logged in - redirecting to login');
                 redirectToLogin(expectedRole);
                 return false;
             }
 
             // If role mismatch, redirect to correct login
             if (expectedRole && result.user.role !== expectedRole) {
+                console.warn('[Session Guard] Role mismatch - Expected:', expectedRole, 'Got:', result.user.role);
                 redirectToLogin(expectedRole);
                 return false;
             }
 
             // Session is valid - remove blocker and show page
+            console.log('[Session Guard] ✓ Session valid - showing page');
             if (pageBlocker && pageBlocker.parentNode) {
                 pageBlocker.parentNode.removeChild(pageBlocker);
             }
             return true;
 
         } catch (error) {
-            console.error('Session validation failed:', error);
+            console.error('[Session Guard] Validation failed with error:', error);
             // On error, redirect to login to be safe
             redirectToLogin(expectedRole);
             return false;
