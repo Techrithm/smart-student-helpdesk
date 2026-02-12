@@ -93,20 +93,34 @@ try {
                 ");
                 $stmt->execute([$user_id]);
             } elseif ($role === 'staff') {
-                 $stmt = $conn->query("
-                    SELECT c.*, d.name as department_name, u.name as student_name 
-                    FROM complaints c 
-                    JOIN departments d ON c.department_id = d.id
-                    JOIN users u ON c.user_id = u.id
-                    ORDER BY 
-                    CASE c.priority
-                        WHEN 'high' THEN 1
-                        WHEN 'medium' THEN 2
-                        WHEN 'low' THEN 3
-                        ELSE 4
-                    END,
-                    c.created_at DESC
-                 ");
+                 // Get staff user's department_id
+                 $userStmt = $conn->prepare("SELECT department_id FROM users WHERE id = ?");
+                 $userStmt->execute([$user_id]);
+                 $userData = $userStmt->fetch(PDO::FETCH_ASSOC);
+                 $staff_dept_id = $userData['department_id'] ?? null;
+                 
+                 // Only show complaints from staff's assigned department
+                 if ($staff_dept_id) {
+                     $stmt = $conn->prepare("
+                        SELECT c.*, d.name as department_name, u.name as student_name 
+                        FROM complaints c 
+                        JOIN departments d ON c.department_id = d.id
+                        JOIN users u ON c.user_id = u.id
+                        WHERE c.department_id = ?
+                        ORDER BY 
+                        CASE c.priority
+                            WHEN 'high' THEN 1
+                            WHEN 'medium' THEN 2
+                            WHEN 'low' THEN 3
+                            ELSE 4
+                        END,
+                        c.created_at DESC
+                     ");
+                     $stmt->execute([$staff_dept_id]);
+                 } else {
+                     // If staff has no department assigned, show no complaints
+                     $stmt = null;
+                 }
             } else {
                 // Admin sees all
                  $stmt = $conn->query("
@@ -152,6 +166,19 @@ try {
             if ($role === 'student' && $complaint['user_id'] != $user_id) {
                  echo json_encode(['status' => 'error', 'message' => 'Access Denied']);
                  exit;
+            }
+            
+            // Security check: Staff see only complaints from their department
+            if ($role === 'staff') {
+                $userStmt = $conn->prepare("SELECT department_id FROM users WHERE id = ?");
+                $userStmt->execute([$user_id]);
+                $userData = $userStmt->fetch(PDO::FETCH_ASSOC);
+                $staff_dept_id = $userData['department_id'] ?? null;
+                
+                if (!$staff_dept_id || $complaint['department_id'] != $staff_dept_id) {
+                    echo json_encode(['status' => 'error', 'message' => 'Access Denied']);
+                    exit;
+                }
             }
             
             // Fetch replies
