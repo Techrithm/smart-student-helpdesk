@@ -27,7 +27,7 @@ if ($method === 'GET') {
     }
     
     elseif ($action === 'get_departments') {
-        $stmt = $conn->query("SELECT * FROM departments ORDER BY name ASC");
+        $stmt = $conn->query("SELECT * FROM departments ORDER BY id ASC");
         echo json_encode(['status' => 'success', 'data' => $stmt->fetchAll(PDO::FETCH_ASSOC)]);
     }
 

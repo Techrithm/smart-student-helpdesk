@@ -21,20 +21,7 @@ if (isset($_COOKIE[session_name()])) {
 // Destroy the session
 session_destroy();
 
-// Redirect based on role
-switch ($role) {
-    case 'student':
-        header('Location: ../../frontend/student/login.html');
-        break;
-    case 'staff':
-        header('Location: ../../frontend/staff/login.html');
-        break;
-    case 'admin':
-        header('Location: ../../frontend/admin/login.html');
-        break;
-    default:
-        header('Location: ../../frontend/index.html');
-        break;
-}
+// Redirect to dashboard
+header('Location: ../../frontend/index.html');
 exit;
 ?>
