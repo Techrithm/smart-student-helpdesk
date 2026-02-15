@@ -1,6 +1,6 @@
 # Smart Student Helpdesk
 
-## 📌 Project Setup Guide (For Teammates)
+## 📌 Project Setup Guide
 
 Follow these steps to run the project on your local machine.
 
@@ -18,7 +18,7 @@ Follow these steps to run the project on your local machine.
 
 Open terminal / CMD and run:
 
-git clone https://github.com/Techitm/smart-student-helpdesk.git
+git clone https://github.com/Techrithm/smart-student-helpdesk.git
 
 Then move the folder into:
 
